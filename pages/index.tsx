@@ -4,8 +4,7 @@ import {GetStaticProps} from "next";
 import {Product} from "../product/types";
 import api from "../product/api";
 import {Link, Button, Grid, Stack, Text, Flex, Box, Image } from "@chakra-ui/react";
-import { parse } from "path/posix";
-// import StoreScreen from "../product/screens/Store";
+import {motion, AnimatePresence, AnimateSharedLayout} from "framer-motion"
 
 interface Props {
   products: Product[];
@@ -21,13 +20,15 @@ function parseCurrency(value: number) : string {
 const IndexRoute: React.FC<Props> = ({products}) => {
   
   const [cart, setCart] = React.useState<Product[]>([]);
+  const [selectedImage, setSelectedImage] = React.useState<string|null>(null);
   const whatsappText = React.useMemo(() => {
     return cart
     .reduce((message, product) => message.concat(`* ${product.title} - ${parseCurrency(product.price)} \n`), ``)
     .concat(`\nTotal: ${parseCurrency(cart.reduce((total,product)=> total + product.price, 0))}`);
   }, [cart]);
   return (
-    <Stack spacing={6}>
+    <AnimateSharedLayout>
+      <Stack spacing={6}>
       <Grid gridGap={6} templateColumns="repeat(auto-fill, minmax(240px, 1fr))">
         { products.map(product => (
         <Stack 
@@ -38,10 +39,14 @@ const IndexRoute: React.FC<Props> = ({products}) => {
           backgroundColor="gray.100"
         >
           <Image 
+            as={motion.img}
+            cursor="pointer"
+            layoutId={product.image}
+            alt={product.title}
             src={product.image} 
-            borderRadiusTop="md" 
             maxHeight={128} 
             objectFit="cover" 
+            onClick={() => setSelectedImage(product.image)}
           />
           <Stack spacing={1} >
             <Text>{product.title}</Text>
@@ -60,8 +65,18 @@ const IndexRoute: React.FC<Props> = ({products}) => {
         </Stack>
         )) }
       </Grid>
+      <AnimatePresence>
       {Boolean(cart.length) && (
-      <Flex position="sticky" bottom={4} alignItems="center" justifyContent="center">
+      <Flex 
+        as={motion.div}
+        initial={{scale:0}}
+        animate={{scale: 1}}
+        exit={{scale: 0}}
+        position="sticky" 
+        bottom={4} 
+        alignItems="center" 
+        justifyContent="center"
+      >
         <Button
           padding={4}
           isExternal
@@ -73,7 +88,28 @@ const IndexRoute: React.FC<Props> = ({products}) => {
         </Button>
       </Flex>
       )}
+      </AnimatePresence>
     </Stack>
+    <AnimatePresence>
+      {selectedImage && (
+        <Flex 
+          key="backdrop" 
+          alignItems="center" 
+          as={motion.div} 
+          backgroundColor="rgba(0,0,0,0.5)"
+          justifyContent="center"
+          layoutId={selectedImage}
+          top={0}
+          left={0}
+          position="fixed"
+          width="100%"
+          onClick={() => setSelectedImage(null)}
+        >
+          <Image src={selectedImage} key="image" />
+        </Flex>
+      )}
+    </AnimatePresence>
+    </AnimateSharedLayout>
   );
 };
 
